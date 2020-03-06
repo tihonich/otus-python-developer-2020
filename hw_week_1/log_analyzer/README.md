@@ -8,7 +8,7 @@ Possible file extensions: .gz, .txt, .log
 
 ```sh
 git clone https://github.com/tihonich/otus-python-developer-2020 
-cd otus_homeworks
+cd otus-python-developer-2020 
 git checkout hw1_log_analyzer
 cd hw_week_1/log_analyzer
 python log_analyzer.py
