@@ -1,3 +1,7 @@
+<<<<<<< HEAD
 * linguist-vendored
 *.js linguist-vendored=false
 *.py linguist-detectable=true
+=======
+ *.* linguist-language=Python
+>>>>>>> 99e0497e6d1d11ab080eba9ef2b60374851aab27
