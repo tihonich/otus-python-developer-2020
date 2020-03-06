@@ -1,0 +1,1 @@
+{"REPORT_SIZE": 1000, "REPORT_DIR": "./reports", "LOG_DIR": "./nginx_logs", "LOG_FILE": "./script_logs/test.log", "FAILURES_PERCENT_THRESHOLD": 50.0}
