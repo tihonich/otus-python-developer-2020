@@ -36,6 +36,8 @@ NUM_SIGNS_FOR_STATS = 3
 LOG_FILE_PATTERN = re.compile(r"nginx-access-ui.log-(\d{8}).(gz|log|txt)$")
 
 
+
+
 class FailuresPercentageError(Exception):
     pass
 
@@ -50,6 +52,9 @@ def get_config_parameters(
     :param default_config: dictionary with default config parameters
     :param config_from_file_: optional config file
     :return: final config after merging config from file and default config with priority on file config
+    :Optional[X] is equivalent to Union[X, None]: https://habr.com/en/company/lamoda/blog/432656/
+    :pep-0484: https://www.python.org/dev/peps/pep-0484/
+    :https://www.pvsm.ru/python/302582
     """
 
     final_config = deepcopy(default_config)
@@ -62,6 +67,7 @@ def get_config_parameters(
         log_file=final_config["LOG_FILE"],
         failures_percent_threshold=final_config["FAILURES_PERCENT_THRESHOLD"]
     )
+
 
 
 def find_latest_log(log_dir: str, log_file_pattern: re.Pattern) -> Optional[LatestLogFile]:
@@ -80,8 +86,10 @@ def find_latest_log(log_dir: str, log_file_pattern: re.Pattern) -> Optional[Late
         log_pattern_matches = re.search(log_file_pattern, file.name)
         if log_pattern_matches:
             creation_date_as_string = log_pattern_matches.group(1)
-            creation_date = datetime.datetime.strptime(creation_date_as_string, DATE_FORMAT_IN_LOG_FILE_NAME)
-
+            try:
+                creation_date = datetime.datetime.strptime(creation_date_as_string, DATE_FORMAT_IN_LOG_FILE_NAME)
+            except (ValueError, TypeError):
+                return None
             if current_max_date is None or creation_date > current_max_date:
                 current_max_date = creation_date
                 current_file_name = file.name
@@ -94,18 +102,6 @@ def find_latest_log(log_dir: str, log_file_pattern: re.Pattern) -> Optional[Late
             date_of_creation=current_max_date,
             extension=file_extension
         )
-
-
-def get_log_file_opener(log_file: LatestLogFile) -> Callable:
-
-    """
-    Retursn write function to open file. Could be gzip.open or open
-    :param log_file: latest file with nginx logs
-    :return: function to open log file
-    """
-    log_file_opener = gzip.open if log_file.extension == ".gz" else open
-
-    return log_file_opener
 
 
 def parse_log_file(log_file: LatestLogFile,
@@ -287,15 +283,12 @@ def generate_report(config: Config, log_file_pattern: re.Pattern) -> NoReturn:
         if os.path.exists(report_name):
             logging.info("Report for this log is already done")
             return
-
-        log_file_opener = get_log_file_opener(log_file=latest_log_file)
+        log_file_opener = gzip.open if latest_log_file.extension == ".gz" else open
 
         logging.info("Started to parse log file: %s", latest_log_file.path)
         parsed_line_gen = parse_log_file(
             log_file=latest_log_file,
-            log_file_opener=log_file_opener
         )
-
         logging.info("Started to calculate stats for url from file: %s", latest_log_file.path)
         url_stats_for_report = calculate_url_stats(parsed_line_gen=parsed_line_gen, cfg=config)
         logging.info("Successfully calculated stats by url from file: %s", latest_log_file.path)
@@ -334,4 +327,3 @@ if __name__ == "__main__":
         level=logging.INFO
     )
     generate_report(config=conf, log_file_pattern=LOG_FILE_PATTERN)
-
